@@ -26,13 +26,22 @@
   },
   "codes": [
     {
-      "id": "21bfff20-32d4-4d51-a403-028118d692e0",
+      "id": "c599f059-4869-4397-b717-1d5ed6650b17",
       "language": {
         "id": "mcneel.roslyn.csharp",
         "version": "9.0.*"
       },
-      "title": "SelectActiveGhComponent",
-      "uri": "program.cs"
+      "title": "QuerySelectedGhComponentToGraph",
+      "uri": "QuerySelectedGhComponentToGraph.cs"
+    },
+    {
+      "id": "70608e76-236f-4f34-877b-6f18c0c54d64",
+      "language": {
+        "id": "mcneel.roslyn.csharp",
+        "version": "9.0.*"
+      },
+      "title": "QuerySelectedGhComponent",
+      "uri": "QuerySelectedGhComponent.cs"
     }
   ]
 }
