@@ -5,6 +5,8 @@ using Rhino;
 using Grasshopper;
 using Grasshopper.Kernel;
 
+//Query list of connection to list of tuples (source component document object, target component document object)
+
 void RunScript()
 {
     if (Grasshopper.Instances.ActiveCanvas == null)
@@ -27,23 +29,30 @@ void RunScript()
         return;
     }
 
-    // Build a set of selected component objects for quick lookup
-    var selectedComponents = new HashSet<IGH_DocumentObject>(
-        selectedObjects.OfType<IGH_Component>().Cast<IGH_DocumentObject>()
-    );
-
     var connections = new List<(IGH_DocumentObject, IGH_DocumentObject)>();
 
-    foreach (var obj in selectedObjects.OfType<IGH_Component>())
+    foreach (IGH_DocumentObject obj in selectedObjects)
     {
-        foreach (var output in obj.Params.Output)
+        if (obj is IGH_Component component)
         {
-            foreach (var recipient in output.Recipients)
+            // Input connections (sources to this component)
+            foreach (var inputParam in component.Params.Input)
             {
-                var targetComponent = recipient.Attributes.GetTopLevel.DocObject;
-                if (targetComponent != null && selectedComponents.Contains(targetComponent))
+                foreach (IGH_Param source in inputParam.Sources)
                 {
-                    connections.Add((obj, targetComponent));
+                    IGH_DocumentObject sourceComponent = source.Attributes.GetTopLevel.DocObject;
+                    if (sourceComponent != null)
+                        connections.Add((sourceComponent, obj));
+                }
+            }
+            // Output connections (this component to recipients)
+            foreach (var outputParam in component.Params.Output)
+            {
+                foreach (IGH_Param recipient in outputParam.Recipients)
+                {
+                    IGH_DocumentObject recipientComponent = recipient.Attributes.GetTopLevel.DocObject;
+                    if (recipientComponent != null)
+                        connections.Add((obj, recipientComponent));
                 }
             }
         }
@@ -51,7 +60,7 @@ void RunScript()
 
     if (connections.Count == 0)
     {
-        RhinoApp.WriteLine("No connections found between selected components.");
+        RhinoApp.WriteLine("No connections found for selected components.");
     }
     else
     {
