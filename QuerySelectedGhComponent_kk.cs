@@ -70,7 +70,7 @@ void RunScript()
     // Print for verification
     foreach (var conn in connections)
     {
-        RhinoApp.WriteLine($"{conn.sourceComp}.{conn.sourceParam} -> {conn.targetGuid}:{conn.targetComp}.{conn.targetParam}");
+        RhinoApp.WriteLine($"{conn.sourceComp}.{conn.sourceParam} -> {conn.targetComp}.{conn.targetParam}");
     }
     RhinoApp.WriteLine("--");
 }
