@@ -24,5 +24,15 @@
       "title": "McNeel Yak Server"
     }
   },
-  "codes": []
+  "codes": [
+    {
+      "id": "21bfff20-32d4-4d51-a403-028118d692e0",
+      "language": {
+        "id": "mcneel.roslyn.csharp",
+        "version": "9.0.*"
+      },
+      "title": "SelectActiveGhComponent",
+      "uri": "program.cs"
+    }
+  ]
 }
