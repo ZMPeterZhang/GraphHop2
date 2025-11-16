@@ -73,5 +73,17 @@
         }
       }
     }
+  ],
+  "libraries": [
+    {
+      "type": "uri",
+      "library": {
+        "base": "Utilities/",
+        "language": {
+          "id": "*.*.csharp",
+          "version": "*.*.*"
+        }
+      }
+    }
   ]
 }
