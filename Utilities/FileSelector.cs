@@ -70,11 +70,30 @@ namespace GraphHop2.Utilities
             {
                 _files = files;
 
-                Title = "Select a Grasshopper File";
+                Title = "GRAPHOP2 - Select a Grasshopper File";
                 Padding = new Padding(10);
-                Width = 600;
-                Height = 420;
+                Width = 400;
+                Height = 600;
                 Resizable = true;
+
+                // Title and subtitle UI elements
+                var titleLabel = new Label
+                {
+                    Text = "GRAPHOP2",
+                    Font = new Font(SystemFont.Bold, 18),
+                    TextAlignment = TextAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextColor = Colors.DarkBlue
+                };
+
+                var subtitleLabel = new Label
+                {
+                    Text = "Here are what we found to be similar to your reference",
+                    Font = new Font(SystemFont.Default, 11),
+                    TextAlignment = TextAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextColor = Colors.Gray
+                };
 
                 _listBox = new ListBox
                 {
@@ -116,6 +135,9 @@ namespace GraphHop2.Utilities
                     HorizontalContentAlignment = HorizontalAlignment.Stretch,
                     Items =
                     {
+                        // Title and subtitle at the top
+                        titleLabel,
+                        subtitleLabel,
                         new Label { Text = "Please select a file to open:" },
                         new Panel { Content = _listBox, Padding = new Padding(0,0,0,6) },
                         new GroupBox
