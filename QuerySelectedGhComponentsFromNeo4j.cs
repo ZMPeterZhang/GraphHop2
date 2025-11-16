@@ -110,15 +110,37 @@ public class Neo4jConnector : IDisposable {
 
 }
 
+public class ExactMatchQueryGenerator {
 
-public class QueryGenerator {
-
-    public QueryGenerator(Neo4jConnector connector)
+    public ExactMatchQueryGenerator(Neo4jConnector connector)
     {
         Connector = connector;
     }
 
     Neo4jConnector Connector;
+
+    T GetRecordValue<T>(IRecord record, string key)
+    {
+        if (record.TryGet(key, out T value))
+            return value;
+        throw new ArgumentException($"Could not get key {key} from record");
+    }
+
+    public async Task<List<string>> QueryDocumentVersionFilePathsFromComponent(IReadOnlyList<IRecord> records)
+    {
+        List<string> filePaths = new List<string>();
+        foreach (var record in records)
+        {
+            var versionId = GetRecordValue<string>(record, "VersionId");
+            var queryString = $"MATCH (n:DocumentVersion) WHERE n.VersionId = '{versionId}' RETURN n.FilePath AS FilePath";
+            var result = await Connector.RunQuery(queryString, true);
+            if (result.Count != 1)
+                throw new ArgumentException($"Could not get document with version {versionId}");
+            filePaths.Add(GetRecordValue<string>(result.First(), "FilePath"));
+        }
+        return filePaths;
+    }
+
 
     public async Task<IReadOnlyList<IRecord>> QueryFromTuples(List<(IGH_DocumentObject, IGH_DocumentObject)> tuples)
     {
@@ -148,12 +170,31 @@ public class QueryGenerator {
         var wheres = nodeVarDict.Keys.Select(node => $"{nodeVarDict[node]}.ComponentGuid = '{node.ComponentGuid}'");
 
         // create complete query
-        var queryString = $"MATCH {string.Join(", ", matches)} WHERE {string.Join(" AND ", wheres)} RETURN n1.VersionId, n1.PivotX, n1.PivotY";
+        var queryString = $"MATCH {string.Join(", ", matches)} WHERE {string.Join(" AND ", wheres)} RETURN n1.VersionId AS VersionId, n1.PivotX AS PivotX, n1.PivotY AS PivotY";
         Console.WriteLine(queryString);
         
         return await Connector.RunQuery(queryString, true);
     }
 
+}
+
+public static class FuzzyPathQueryGenerator 
+{
+    // Use string types, and static method!
+    public static string QueryFromPath(string startId, string endId, int minLength, int maxLength)
+    {
+        // Cypher query string (fixing C# syntax, using $"" correctly)
+        string queryString = $@"
+            MATCH (start:ComponentInstance),
+                  (end:ComponentInstance),
+                  p=((start)-[:Wire*{minLength}..{maxLength}]->(end))
+            WHERE start.ComponentGuid = '{startId}'
+              AND end.ComponentGuid = '{endId}'
+            RETURN p
+        ";
+        // For now, just return the string (adjust as needed)
+        return queryString;
+    }
 }
 
 List<(IGH_DocumentObject, IGH_DocumentObject)> GetConnections(IEnumerable<IGH_DocumentObject> selectedObjects)
@@ -233,9 +274,16 @@ using (var connector = new Neo4jConnector())
     if (tuples.Count == 0)
         return;
 
+<<<<<<< Updated upstream
     var generator = new QueryGenerator(connector);
+    var records = await generator.QueryFromTuples(tuples);
+    var filePaths = await generator.QueryDocumentVersionFilePathsFromComponent(records);
+    Console.WriteLine($"Found {filePaths.Count} document versions");
+=======
+    var generator = new ExactMatchQueryGenerator(connector);
     await generator.QueryFromTuples(tuples);
 
+>>>>>>> Stashed changes
 }
 
     

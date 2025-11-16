@@ -110,9 +110,9 @@ public class Neo4jConnector : IDisposable {
 }
 
 
-public class QueryGenerator {
+public class ExactMatchQueryGenerator {
 
-    public QueryGenerator(Neo4jConnector connector)
+    public ExactMatchQueryGenerator(Neo4jConnector connector)
     {
         Connector = connector;
     }

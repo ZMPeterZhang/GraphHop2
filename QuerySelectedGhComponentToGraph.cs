@@ -5,6 +5,8 @@ using Rhino;
 using Grasshopper;
 using Grasshopper.Kernel;
 using GraphHop2.Utilities;
+using GraphHop2;
+
 
 //Query list of connection to list of tuples (source component document object, target component document object)
 
@@ -45,6 +47,13 @@ void RunScript()
             string tgtName = pair.Item2?.GetType().Name + ": " + (pair.Item2 as IGH_Component)?.Name;
             RhinoApp.WriteLine($"({srcName}) -> ({tgtName})");
         }
+
+        RhinoApp.WriteLine("START:");
+
+        // FindPathFromInputToOutput.GetShortestPathsFromInputsToOutputs(selectedObjects);
+        var searcher = new GraphHop2.Search();
+        searcher.pathMatchQuery(selectedObjects);
+        RhinoApp.WriteLine("END:");
     }
 }
 
