@@ -176,7 +176,7 @@ Finds shortest paths from input components to output components in the selection
 
 ```
 GraphHop2/
-├── QuerySelectedGhComponentsFromNeo4j.cs # Main implementations
+├── QuerySelectedGhComponentsFromNeo4j.cs # Main entry point
 ├── GraphHop2.rhproj
 ├── Neo4jConnector.cs
 ├── Test1.ghx #grasshopper test file
