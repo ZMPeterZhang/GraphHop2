@@ -286,7 +286,7 @@ public static class FuzzyPathQueryGenerator
                   p=((start)-[:Wire*{minLength}..{maxLength}]->(end))
             WHERE start.ComponentGuid = '{startId}'
               AND end.ComponentGuid = '{endId}'
-            RETURN p
+            RETURN DISTINCT start.VersionId AS VersionId, start.InstanceGuid AS InstanceGuid, start.PivotX AS PivotX, start.PivotY AS PivotY
         ";
         // For now, just return the string (adjust as needed)
         return queryString;
@@ -345,6 +345,27 @@ public class Search
         return score;
     }
 
+
+    public string GenerateFuzzyQuery(IEnumerable<IGH_DocumentObject> selectedObjects)
+    {
+        var paths = FindPathFromInputToOutput.GetShortestPathsFromInputsToOutputs(selectedObjects);
+        var path = paths.OrderByDescending(p => p.Count).FirstOrDefault();
+
+        var start = path.First();
+        var end = path.Last();
+        var pathLength = path.Count;
+
+        var startId = start.ComponentGuid.ToString();
+        var endId = end.ComponentGuid.ToString();
+
+        int minLength = Math.Max(1, pathLength - 1);
+        int maxLength = pathLength + 1;
+
+
+        string query = FuzzyPathQueryGenerator.QueryFromPath(startId, endId, minLength, maxLength);
+        Console.WriteLine(query);
+        return query;
+    }
 
     public async Task<List<(string, double, double, int)>> pathMatchQuery(IEnumerable<IGH_DocumentObject> selectedObjects)
 {
@@ -405,6 +426,17 @@ using (var connector = new Neo4jConnector(
 
     var generator = new QueryGenerator(connector);
     var records = await generator.QueryFromTuples(tuples);
+
+    // fuzzy
+    
+
+    var ghDoc = Grasshopper.Instances.ActiveCanvas.Document;
+    var selectedObjects = ghDoc.SelectedObjects();
+    var fuzzy_query= new Search().GenerateFuzzyQuery(selectedObjects);
+
+    var records_2 = await connector.RunQuery(fuzzy_query, true);
+
+    
     var documentData = await generator.QueryDocumentDataFromComponent(records);
     Console.WriteLine($"Found {documentData.Count} document versions");
     foreach (var data in documentData)
@@ -431,18 +463,6 @@ using (var connector = new Neo4jConnector(
     {
         Console.WriteLine("No file selected.");
     }
-    Console.WriteLine("END");
-    var ghDoc = Grasshopper.Instances.ActiveCanvas.Document;
-    var selectedObjects = ghDoc.SelectedObjects();
-
-var searcher = new Search();
-var final_results = await searcher.search(selectedObjects);
-
-foreach (var result in final_results)
-    {
-        Console.WriteLine($"VersionId: {result.Item1}, PivotX: {result.Item2}, PivotY: {result.Item3}, Score: {result.Item4}");
-    }
-
 
     Console.WriteLine("END");
 }
