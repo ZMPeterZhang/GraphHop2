@@ -3,12 +3,12 @@
 using Eto.Forms;
 using Eto.Drawing;
 using Microsoft.Web.WebView2.WinForms;
-using Microsoft.Web.WebView2.Core;
 using Rhino.UI;
-using Rhino.Commands;  // Added for Result type
+using Rhino.Commands;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 // Initialize WebView2 Environment
 public static class WebView2Helper
@@ -35,12 +35,17 @@ public class WebView2Form : Form
 
         // Create WebView2 control
         _webView = new WebView2();
-        _webView.Dock = System.Windows.Forms.DockStyle.Fill;
+        _webView.Dock = DockStyle.Fill;
 
-        // Wrap it in Eto control - FIXED: Use proper Eto wrapper
-        // Note: On Windows, Eto.Forms can host native WinForms controls
-        var nativeControl = Eto.Forms.Platform.Instance.CreateControl(_webView);
-        Content = nativeControl;
+        // FIXED: Use NativeControlHost to wrap WinForms control in Eto.Forms
+        var nativeHost = new NativeControlHost();
+        nativeHost.CreateNativeControl = () => 
+        {
+            // Create the control and return its handle
+            _webView.CreateControl();
+            return _webView.Handle;
+        };
+        Content = nativeHost;
 
         // Initialize when form loads
         Load += async (sender, e) => await InitializeWebView2Async();
@@ -61,7 +66,7 @@ public class WebView2Form : Form
     }
 }
 
-// Command to show the form - FIXED: Added Rhino.Commands namespace
+// Command to show the form
 public class ShowWebView2Command : Rhino.Commands.Command
 {
     public override string EnglishName => "ShowWebView2";
@@ -69,8 +74,7 @@ public class ShowWebView2Command : Rhino.Commands.Command
     protected override Result RunCommand(Rhino.RhinoDoc doc, Rhino.Commands.RunMode mode)
     {
         var form = new WebView2Form();
-        // FIXED: Show without arguments, or use ShowModal for modal dialog
         form.Show();
-        return Result.Success;  // FIXED: Now Result is recognized from Rhino.Commands
+        return Result.Success;
     }
 }
