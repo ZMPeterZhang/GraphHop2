@@ -51,6 +51,27 @@
       },
       "title": "QuerySelectedGhComponentOutput",
       "uri": "QuerySelectedGhComponentOutput.cs"
+    },
+    {
+      "id": "ccee42ce-cda2-4044-85cf-dccc3587eccf",
+      "language": {
+        "id": "mcneel.roslyn.csharp",
+        "version": "9.0.*"
+      },
+      "title": "QuerySelectedGhComponentsFromNeo4j",
+      "uri": "QuerySelectedGhComponentsFromNeo4j.cs"
+    }
+  ],
+  "libraries": [
+    {
+      "type": "uri",
+      "library": {
+        "base": "Utilities/",
+        "language": {
+          "id": "*.*.csharp",
+          "version": "*.*.*"
+        }
+      }
     }
   ]
 }
