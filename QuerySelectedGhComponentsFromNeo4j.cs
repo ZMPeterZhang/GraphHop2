@@ -120,6 +120,29 @@ public class QueryGenerator {
 
     Neo4jConnector Connector;
 
+    T GetRecordValue<T>(IRecord record, string key)
+    {
+        if (record.TryGet(key, out T value))
+            return value;
+        throw new ArgumentException($"Could not get key {key} from record");
+    }
+
+    public async Task<List<string>> QueryDocumentVersionFilePathsFromComponent(IReadOnlyList<IRecord> records)
+    {
+        List<string> filePaths = new List<string>();
+        foreach (var record in records)
+        {
+            var versionId = GetRecordValue<string>(record, "VersionId");
+            var queryString = $"MATCH (n:DocumentVersion) WHERE n.VersionId = '{versionId}' RETURN n.FilePath AS FilePath";
+            var result = await Connector.RunQuery(queryString, true);
+            if (result.Count != 1)
+                throw new ArgumentException($"Could not get document with version {versionId}");
+            filePaths.Add(GetRecordValue<string>(result.First(), "FilePath"));
+        }
+        return filePaths;
+    }
+
+
     public async Task<IReadOnlyList<IRecord>> QueryFromTuples(List<(IGH_DocumentObject, IGH_DocumentObject)> tuples)
     {
         // create a dictionary from componentinstance to variable name
@@ -148,7 +171,7 @@ public class QueryGenerator {
         var wheres = nodeVarDict.Keys.Select(node => $"{nodeVarDict[node]}.ComponentGuid = '{node.ComponentGuid}'");
 
         // create complete query
-        var queryString = $"MATCH {string.Join(", ", matches)} WHERE {string.Join(" AND ", wheres)} RETURN n1.VersionId, n1.PivotX, n1.PivotY";
+        var queryString = $"MATCH {string.Join(", ", matches)} WHERE {string.Join(" AND ", wheres)} RETURN n1.VersionId AS VersionId, n1.PivotX AS PivotX, n1.PivotY AS PivotY";
         Console.WriteLine(queryString);
         
         return await Connector.RunQuery(queryString, true);
@@ -234,8 +257,9 @@ using (var connector = new Neo4jConnector())
         return;
 
     var generator = new QueryGenerator(connector);
-    await generator.QueryFromTuples(tuples);
-
+    var records = await generator.QueryFromTuples(tuples);
+    var filePaths = await generator.QueryDocumentVersionFilePathsFromComponent(records);
+    Console.WriteLine($"Found {filePaths.Count} document versions");
 }
 
     
