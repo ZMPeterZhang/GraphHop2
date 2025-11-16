@@ -271,6 +271,24 @@ List<(IGH_DocumentObject, IGH_DocumentObject)> GetSelectedTuples()
 
     return connections;
 }
+public static class FuzzyPathQueryGenerator 
+{
+    // Use string types, and static method!
+    public static string QueryFromPath(string startId, string endId, int minLength, int maxLength)
+    {
+        // Cypher query string (fixing C# syntax, using $"" correctly)
+        string queryString = $@"
+            MATCH (start:ComponentInstance),
+                  (end:ComponentInstance),
+                  p=((start)-[:Wire*{minLength}..{maxLength}]->(end))
+            WHERE start.ComponentGuid = '{startId}'
+              AND end.ComponentGuid = '{endId}'
+            RETURN p
+        ";
+        // For now, just return the string (adjust as needed)
+        return queryString;
+    }
+}
 
 public class Search
 {
