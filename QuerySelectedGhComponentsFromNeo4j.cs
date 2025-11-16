@@ -134,11 +134,14 @@ public class QueryGenerator {
         foreach (var record in records)
         {
             var versionId = GetRecordValue<string>(record, "VersionId");
-            var queryString = $"MATCH (n:DocumentVersion) WHERE n.VersionId = '{versionId}' RETURN n.FilePath AS FilePath";
+            var queryString = $"MATCH (n:DocumentVersion) WHERE n.VersionId = '{versionId}' RETURN n.FilePath AS FilePath, n.IsCluster as IsCluster";
             var result = await Connector.RunQuery(queryString, true);
             if (result.Count != 1)
                 throw new ArgumentException($"Could not get document with version {versionId}");
-            filePaths.Add(GetRecordValue<string>(result.First(), "FilePath"));
+            var filePath = GetRecordValue<string>(result.First(), "FilePath");
+            if (string.IsNullOrEmpty(filePath))
+                continue;
+            filePaths.Add(filePath);
         }
         return filePaths;
     }
@@ -172,7 +175,7 @@ public class QueryGenerator {
         var wheres = nodeVarDict.Keys.Select(node => $"{nodeVarDict[node]}.ComponentGuid = '{node.ComponentGuid}'");
 
         // create complete query
-        var queryString = $"MATCH {string.Join(", ", matches)} WHERE {string.Join(" AND ", wheres)} RETURN n1.VersionId AS VersionId, n1.PivotX AS PivotX, n1.PivotY AS PivotY";
+        var queryString = $"MATCH {string.Join(", ", matches)} WHERE {string.Join(" AND ", wheres)} RETURN DISTINCT n1.VersionId AS VersionId, n1.InstanceGuid AS InstanceGuid, n1.PivotX AS PivotX, n1.PivotY AS PivotY";
         Console.WriteLine(queryString);
         
         return await Connector.RunQuery(queryString, true);
