@@ -55,11 +55,12 @@ Alternatively, you can pass these values directly to the `Neo4jConnector` constr
 ### 3. Install GraphHop2
 
 1. Clone or download this repository
-2. Copy the project files to your Grasshopper components directory or reference them in your Grasshopper scripts
+2. Copy the project files to your directory
 3. Ensure all utility classes are accessible:
    - `SelectionToGraphUtility.cs`
    - `FindPathFromInputToOutput.cs`
    - Other utility classes in the `Utilities/` folder
+4. Run the command in Rhino's Script Editor
 
 ## Usage
 
