@@ -98,8 +98,8 @@ private void OpenFile(string filePath)
     // Load Grasshopper if not already running
     Rhino.RhinoApp.RunScript("_Grasshopper _Load", false);
 
-    // Open the file via the command-line API
-    string cmd = $"-_Grasshopper _Open \"{filePath}\" _Enter";
+    // Open the file via the command-line API, under the Document menu
+    string cmd = $"-_Grasshopper _Document _Open \"{filePath}\" _Enter";
     Rhino.RhinoApp.RunScript(cmd, false);
 
     Rhino.RhinoApp.WriteLine($"Opened: {Path.GetFileName(filePath)}");
