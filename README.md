@@ -60,7 +60,9 @@ Alternatively, you can pass these values directly to the `Neo4jConnector` constr
    - `SelectionToGraphUtility.cs`
    - `FindPathFromInputToOutput.cs`
    - Other utility classes in the `Utilities/` folder
-4. Run the command in Rhino's Script Editor
+4. Open Rhino's Script Editor
+5. Open project `GraphHop2.rhproj`
+6. Run `QuerySelectedGhComponentsFromNeo4j.cs`
 
 ## Usage
 
@@ -174,14 +176,21 @@ Finds shortest paths from input components to output components in the selection
 
 ```
 GraphHop2/
-├── Neo4jConnector.cs          # Database connection and query execution
-├── Search.cs                   # Main search functionality
-├── EtoForm.cs                  # UI components
-├── QuerySelectedGhComponent*.cs # Various query implementations
+├── QuerySelectedGhComponentsFromNeo4j.cs # Main implementations
+├── GraphHop2.rhproj
+├── Neo4jConnector.cs
+├── Test1.ghx #grasshopper test file
 ├── Utilities/
-│   ├── SelectionToGraphUtility.cs
+│   ├── FindSelector.cs
 │   ├── FindPathFromInputToOutput.cs
-│   └── ...
+│   ├── SelectionToGraphUtility.cs
+│   ├── SelectionToInputUtility.cs
+│   └── SelectionToOutputUtility.cs
+├── QuerySelectedGhComponent.cs
+├── QuerySelectedGhComponentInput.cs
+├── QuerySelectedGhComponentOutput.cs
+├── QuerySelectedGhComponentToGraph.cs
+├── QuerySelectedGhComponentFromNeo4j.cs
 └── README.md
 ```
 
