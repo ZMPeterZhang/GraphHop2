@@ -1,32 +1,28 @@
+//
+// !-r "Eto.dll"
+// !-r "Rhino.UI.dll"
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows.Forms;
 using Rhino;
-using Rhino.UI;
+using Eto.Forms;
+using Eto.Drawing;
+using Grasshopper;
+using Grasshopper.Kernel;
 
-public class GrasshopperFilePreview
+public class GrasshopperFileLister
 {
     public static void Run()
     {
-        string folderPath;
-        using (var folderDialog = new FolderBrowserDialog())
-        {
-            folderDialog.Description = "Select Folder with Grasshopper Files";
-            if (folderDialog.ShowDialog() != DialogResult.OK)
-            {
-                RhinoApp.WriteLine("No folder selected. Exiting script.");
-                return;
-            }
-            folderPath = folderDialog.SelectedPath;
-        }
-
-        if (string.IsNullOrEmpty(folderPath))
+        var folderDialog = new SelectFolderDialog();
+        if (folderDialog.ShowDialog(Rhino.UI.RhinoEtoApp.MainWindow) != DialogResult.Ok)
         {
             RhinoApp.WriteLine("No folder selected. Exiting script.");
             return;
         }
+        string folderPath = folderDialog.Directory;
 
         var ghFiles = Directory.GetFiles(folderPath, "*.gh")
                                .Concat(Directory.GetFiles(folderPath, "*.ghx"))
@@ -38,29 +34,15 @@ public class GrasshopperFilePreview
             return;
         }
 
-        RhinoApp.WriteLine("Grasshopper files found:");
-        for (int i = 0; i < ghFiles.Count; i++)
+        var etoForm = new EtoFileSelector(ghFiles);
+        etoForm.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+        
+        string selectedFile = etoForm.SelectedFile;
+
+        if (!string.IsNullOrEmpty(selectedFile))
         {
-            RhinoApp.WriteLine($"{i + 1}: {Path.GetFileName(ghFiles[i])}");
+            OpenFile(selectedFile);
         }
-
-        int fileIndex = -1;
-        var rc = Rhino.Input.RhinoGet.GetInteger("Enter the number of the file to preview:", false, ref fileIndex);
-
-        if (rc != Rhino.Commands.Result.Success || fileIndex < 1 || fileIndex > ghFiles.Count)
-        {
-            RhinoApp.WriteLine("--- Debug Info ---");
-            RhinoApp.WriteLine($"Input result: {rc}");
-            RhinoApp.WriteLine($"Entered number: {fileIndex}");
-            RhinoApp.WriteLine($"Number of files found: {ghFiles.Count}");
-            RhinoApp.WriteLine($"Valid range is 1 to {ghFiles.Count}");
-            RhinoApp.WriteLine("--------------------");
-            RhinoApp.WriteLine("Invalid selection. Exiting script.");
-            return;
-        }
-
-        string selectedFile = ghFiles[fileIndex - 1];
-        OpenFile(selectedFile);
     }
 
     private static void OpenFile(string filePath)
@@ -70,16 +52,75 @@ public class GrasshopperFilePreview
             RhinoApp.WriteLine($"File not found: {filePath}");
             return;
         }
-
-        // This command should open the file, which will also open the Grasshopper editor window.
-        string cmd = $"-_Grasshopper _Document _Open \"{filePath}\" _Enter";
-        RhinoApp.RunScript(cmd, true);
-
-        RhinoApp.WriteLine($"Sent command to open: {Path.GetFileName(filePath)}");
+        
+        var io = new Grasshopper.Kernel.GH_DocumentIO(filePath);
+        if (io.Open())
+        {
+            var doc = io.Document;
+            if (doc != null)
+            {
+                // Add the new document to the server. This makes it appear in the GH window.
+                Grasshopper.Instances.DocumentServer.AddDocument(doc);
+                RhinoApp.WriteLine($"Successfully opened: {Path.GetFileName(filePath)}");
+                return;
+            }
+        }
+        
+        RhinoApp.WriteLine($"Failed to open: {Path.GetFileName(filePath)}");
     }
 }
 
-// To run this script in Rhino, you would typically call:
-// GrasshopperFilePreview.Run();
+public class EtoFileSelector : Dialog<string>
+{
+    public string SelectedFile { get; private set; }
 
-GrasshopperFilePreview.Run();
+    public EtoFileSelector(List<string> files)
+    {
+        Title = "Select a Grasshopper File";
+        Padding = new Padding(10);
+        
+        var listBox = new ListBox();
+        files.ForEach(f => listBox.Items.Add(Path.GetFileName(f)));
+
+        var openButton = new Button { Text = "Open" };
+        openButton.Click += (sender, e) =>
+        {
+            if (listBox.SelectedIndex != -1)
+            {
+                SelectedFile = files[listBox.SelectedIndex];
+                Close();
+            }
+            else
+            {
+                MessageBox.Show("Please select a file.", MessageBoxType.Information);
+            }
+        };
+
+        var cancelButton = new Button { Text = "Cancel" };
+        cancelButton.Click += (sender, e) =>
+        {
+            SelectedFile = null;
+            Close();
+        };
+
+        Content = new StackLayout
+        {
+            Spacing = 5,
+            Items =
+            {
+                new Label { Text = "Please select a file to open:" },
+                listBox,
+            }
+        };
+        
+        PositiveButtons.Add(openButton);
+        NegativeButtons.Add(cancelButton);
+        
+        // This is needed to handle button clicks from Positive/Negative buttons
+        this.DefaultButton.Click += (s, e) => openButton.PerformClick();
+    }
+}
+
+
+// To run this script in Rhino, you would typically call:
+GrasshopperFileLister.Run();
