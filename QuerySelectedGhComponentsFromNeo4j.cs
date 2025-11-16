@@ -175,6 +175,15 @@ List<(IGH_DocumentObject, IGH_DocumentObject)> GetConnections(IEnumerable<IGH_Do
                 }
             }
         }
+        else if (obj is IGH_Param par)
+        {
+            foreach (IGH_Param recipient in par.Recipients)
+            {
+                IGH_DocumentObject recipientComponent = recipient.Attributes.GetTopLevel.DocObject;
+                if (selectedObjects.Contains(recipientComponent))
+                    connections.Add((obj, recipientComponent));
+            }
+        }
     }
 
     return connections;
