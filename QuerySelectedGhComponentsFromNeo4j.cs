@@ -145,6 +145,25 @@ public class QueryGenerator {
         return filePaths;
     }
 
+    public async Task<List<(string, int, int)>> QueryDocumentDataFromComponent(IReadOnlyList<IRecord> records)
+    {
+        List<(string, int, int)> filePathsAndCoords = new List<(string, int, int)>();
+        foreach (var record in records)
+        {
+            var versionId = GetRecordValue<string>(record, "VersionId");
+            var queryString = $"MATCH (n:DocumentVersion) WHERE n.VersionId = '{versionId}' RETURN n.FilePath AS FilePath, n.IsCluster as IsCluster";
+            var result = await Connector.RunQuery(queryString, true);
+            if (result.Count != 1)
+                throw new ArgumentException($"Could not get document with version {versionId}");
+            var filePath = GetRecordValue<string>(result.First(), "FilePath");
+            if (string.IsNullOrEmpty(filePath))
+                continue;
+            var pivotX = GetRecordValue<int>(record, "PivotX"); 
+            var pivotY = GetRecordValue<int>(record, "PivotY"); 
+            filePathsAndCoords.Add((filePath, pivotX, pivotY));
+        }
+        return filePathsAndCoords;
+    }
 
     public async Task<IReadOnlyList<IRecord>> QueryFromTuples(List<(IGH_DocumentObject, IGH_DocumentObject)> tuples)
     {
@@ -261,8 +280,12 @@ using (var connector = new Neo4jConnector())
 
     var generator = new QueryGenerator(connector);
     var records = await generator.QueryFromTuples(tuples);
-    var filePaths = await generator.QueryDocumentVersionFilePathsFromComponent(records);
-    Console.WriteLine($"Found {filePaths.Count} document versions");
+    var documentData = await generator.QueryDocumentDataFromComponent(records);
+    Console.WriteLine($"Found {documentData.Count} document versions");
+    foreach (var data in documentData)
+    {
+        Console.WriteLine($"File {data.Item1}, PivotX {data.Item2}, PivotY {data.Item3}");
+    }
 }
 
     
