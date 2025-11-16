@@ -4,6 +4,7 @@ using System.Linq;
 using Rhino;
 using Grasshopper;
 using Grasshopper.Kernel;
+using GraphHop2.Utilities;
 
 //Query list of "input", components within the selection
 //Components (or params) with no input parameters,
@@ -32,72 +33,7 @@ void RunScript()
         return;
     }
 
-    var inputLikeObjects = new HashSet<IGH_DocumentObject>();
-
-    foreach (IGH_DocumentObject obj in selectedObjects)
-    {
-        // Only consider objects that are IGH_Param or IGH_Component
-        var compObj = obj as IGH_Component;
-        var paramObj = obj as IGH_Param;
-        bool isInputLike = false;
-
-        if (compObj != null)
-        {
-            // Case 1: No input parameters at all (e.g., sliders, panels, etc.)
-            if (compObj.Params.Input.Count == 0)
-            {
-                isInputLike = true;
-            }
-            else
-            {
-                // Case 2: All input params have no sources (unconnected)
-                bool allInputsUnconnected = compObj.Params.Input.All(p => p.Sources.Count == 0);
-                if (allInputsUnconnected)
-                {
-                    isInputLike = true;
-                }
-                else
-                {
-                    // Case 3: At least one input param is connected to a source outside the selection
-                    foreach (var inputParam in compObj.Params.Input)
-                    {
-                        foreach (IGH_Param source in inputParam.Sources)
-                        {
-                            IGH_DocumentObject sourceComponent = source.Attributes.GetTopLevel.DocObject;
-                            if (!selectedObjects.Contains(sourceComponent))
-                            {
-                                isInputLike = true;
-                                break;
-                            }
-                        }
-                        if (isInputLike) break;
-                    }
-                }
-            }
-        }
-        else if (paramObj != null)
-        {
-            // For IGH_Param (like panels, sliders):
-            if (paramObj.Sources.Count == 0)
-            {
-                isInputLike = true;
-            }
-            else
-            {
-                foreach (IGH_Param source in paramObj.Sources)
-                {
-                    IGH_DocumentObject sourceComponent = source.Attributes.GetTopLevel.DocObject;
-                    if (!selectedObjects.Contains(sourceComponent))
-                    {
-                        isInputLike = true;
-                        break;
-                    }
-                }
-            }
-        }
-        if (isInputLike)
-            inputLikeObjects.Add(obj);
-    }
+    var inputLikeObjects = SelectionToInputUtility.GetInputLikeObjects(selectedObjects);
 
     if (inputLikeObjects.Count == 0)
     {

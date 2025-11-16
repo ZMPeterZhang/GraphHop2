@@ -4,6 +4,7 @@ using System.Linq;
 using Rhino;
 using Grasshopper;
 using Grasshopper.Kernel;
+using GraphHop2.Utilities;
 
 //Query list of connection to list of tuples (source component document object, target component document object)
 
@@ -29,34 +30,7 @@ void RunScript()
         return;
     }
 
-    var connections = new List<(IGH_DocumentObject, IGH_DocumentObject)>();
-
-    foreach (IGH_DocumentObject obj in selectedObjects)
-    {
-        if (obj is IGH_Component component)
-        {
-            // Input connections (sources to this component)
-            foreach (var inputParam in component.Params.Input)
-            {
-                foreach (IGH_Param source in inputParam.Sources)
-                {
-                    IGH_DocumentObject sourceComponent = source.Attributes.GetTopLevel.DocObject;
-                    if (sourceComponent != null)
-                        connections.Add((sourceComponent, obj));
-                }
-            }
-            // Output connections (this component to recipients)
-            foreach (var outputParam in component.Params.Output)
-            {
-                foreach (IGH_Param recipient in outputParam.Recipients)
-                {
-                    IGH_DocumentObject recipientComponent = recipient.Attributes.GetTopLevel.DocObject;
-                    if (recipientComponent != null)
-                        connections.Add((obj, recipientComponent));
-                }
-            }
-        }
-    }
+    var connections = SelectionToGraphUtility.GetConnections(selectedObjects);
 
     if (connections.Count == 0)
     {
