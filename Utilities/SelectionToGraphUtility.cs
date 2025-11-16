@@ -38,6 +38,23 @@ namespace GraphHop2.Utilities
                         }
                     }
                 }
+                else if (obj is IGH_Param param)
+                {
+                    // Input connections (sources to this param)
+                    foreach (IGH_Param source in param.Sources)
+                    {
+                        IGH_DocumentObject sourceObj = source.Attributes.GetTopLevel.DocObject;
+                        if (sourceObj != null)
+                            connections.Add((sourceObj, obj));
+                    }
+                    // Output connections (this param to recipients)
+                    foreach (IGH_Param recipient in param.Recipients)
+                    {
+                        IGH_DocumentObject recipientObj = recipient.Attributes.GetTopLevel.DocObject;
+                        if (recipientObj != null)
+                            connections.Add((obj, recipientObj));
+                    }
+                }
             }
 
             return connections;
