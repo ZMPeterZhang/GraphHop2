@@ -11,7 +11,7 @@ namespace GraphHop2.Utilities
     public static class FileSelector
     {
         /// <summary>
-        /// Shows a modal dialog with the given file paths and returns the selected file(s).
+        /// Shows a modeless window with the given file paths and returns immediately.
         /// Optionally replaces the prefix of each file path before "DemoModels" with the provided library path.
         /// </summary>
         /// <param name="filePaths">List of full file paths to display.</param>
@@ -54,17 +54,23 @@ namespace GraphHop2.Utilities
                     validFiles[i] = validFiles[i].TrimEnd(';');
             }
 
-            var dialog = new EtoGhFileSelector(validFiles);
-            dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
-            return dialog.Result ?? new List<string>();
+            var form = new EtoGhFileSelector(validFiles);
+            // Bring the window to the front after showing
+            form.Show();
+            form.BringToFront();
+            // Since modeless, you can't return the result immediately.
+            // You may want to provide a callback or event to handle the result asynchronously.
+            return new List<string>(); // Or handle result via event/callback
         }
 
-        private class EtoGhFileSelector : Dialog<List<string>>
+        private class EtoGhFileSelector : Form
         {
             private readonly List<string> _files;
             private readonly ListBox _listBox;
             private readonly Label _detailsLabel;
             private readonly Label _statusLabel;
+
+            public List<string> Result { get; private set; } = new List<string>();
 
             public EtoGhFileSelector(List<string> files)
             {
@@ -168,9 +174,6 @@ namespace GraphHop2.Utilities
                         }
                     }
                 };
-
-                DefaultButton = openButton;
-                AbortButton = cancelButton;
             }
 
             private void TryOpenSelected()
