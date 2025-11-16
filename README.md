@@ -35,6 +35,10 @@ GraphHop2 connects Grasshopper (Rhino's visual programming environment) with a N
    - **Relationships**: `Wire` (between ComponentInstance nodes)
    - **Properties**: `ComponentGuid`, `VersionId`, `FilePath`, `PivotX`, `PivotY`
 
+<img width="1500" height="auto" alt="Screenshot 2025-11-16 at 10 00 52 AM" src="https://github.com/user-attachments/assets/b0e2b9f4-a6b0-41c5-91b7-983f0ed3ab35" />
+<img width="1500" height="auto" alt="Screenshot 2025-11-16 at 10 04 35 AM" src="https://github.com/user-attachments/assets/a5ce1672-ee14-41d1-84b5-b0879bb8203a" />
+
+
 ### 2. Environment Variables
 
 Set the following environment variables for Neo4j connection:
