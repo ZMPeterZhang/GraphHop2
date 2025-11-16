@@ -36,44 +36,11 @@ public class GrasshopperFileLister
 
         var etoForm = new EtoFileSelector(ghFiles);
         etoForm.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
-        
-        string selectedFile = etoForm.SelectedFile;
-
-        if (!string.IsNullOrEmpty(selectedFile))
-        {
-            OpenFile(selectedFile);
-        }
-    }
-
-    private static void OpenFile(string filePath)
-    {
-        if (!File.Exists(filePath))
-        {
-            RhinoApp.WriteLine($"File not found: {filePath}");
-            return;
-        }
-        
-        var io = new Grasshopper.Kernel.GH_DocumentIO(filePath);
-        if (io.Open())
-        {
-            var doc = io.Document;
-            if (doc != null)
-            {
-                // Add the new document to the server. This makes it appear in the GH window.
-                Grasshopper.Instances.DocumentServer.AddDocument(doc);
-                RhinoApp.WriteLine($"Successfully opened: {Path.GetFileName(filePath)}");
-                return;
-            }
-        }
-        
-        RhinoApp.WriteLine($"Failed to open: {Path.GetFileName(filePath)}");
     }
 }
 
-public class EtoFileSelector : Dialog<string>
+public class EtoFileSelector : Dialog
 {
-    public string SelectedFile { get; private set; }
-
     public EtoFileSelector(List<string> files)
     {
         Title = "Select a Grasshopper File";
@@ -87,7 +54,8 @@ public class EtoFileSelector : Dialog<string>
         {
             if (listBox.SelectedIndex != -1)
             {
-                SelectedFile = files[listBox.SelectedIndex];
+                string selectedFilePath = files[listBox.SelectedIndex];
+                OpenFile(selectedFilePath);
                 Close();
             }
             else
@@ -99,7 +67,6 @@ public class EtoFileSelector : Dialog<string>
         var cancelButton = new Button { Text = "Cancel" };
         cancelButton.Click += (sender, e) =>
         {
-            SelectedFile = null;
             Close();
         };
 
@@ -116,11 +83,29 @@ public class EtoFileSelector : Dialog<string>
         PositiveButtons.Add(openButton);
         NegativeButtons.Add(cancelButton);
         
-        // This is needed to handle button clicks from Positive/Negative buttons
-        this.DefaultButton.Click += (s, e) => openButton.PerformClick();
+        DefaultButton = openButton;
+        AbortButton = cancelButton;
     }
+    
+private void OpenFile(string filePath)
+{
+    if (!File.Exists(filePath))
+    {
+        Rhino.RhinoApp.WriteLine($"File not found: {filePath}");
+        return;
+    }
+
+    // Load Grasshopper if not already running
+    Rhino.RhinoApp.RunScript("_Grasshopper _Load", false);
+
+    // Open the file via the command-line API
+    string cmd = $"-_Grasshopper _Open \"{filePath}\" _Enter";
+    Rhino.RhinoApp.RunScript(cmd, false);
+
+    Rhino.RhinoApp.WriteLine($"Opened: {Path.GetFileName(filePath)}");
 }
 
+}
 
 // To run this script in Rhino, you would typically call:
 GrasshopperFileLister.Run();
