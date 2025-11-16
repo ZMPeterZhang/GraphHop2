@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using Grasshopper.Kernel;
-using GraphHop2.Utilities;
+using GraphHop2.Utilities; // Make sure this is present for FileSelector
+using System.IO;
 
 public class Neo4jConnector : IDisposable {
 
@@ -272,7 +273,7 @@ List<(IGH_DocumentObject, IGH_DocumentObject)> GetSelectedTuples()
 }
 
 
-using (var connector = new Neo4jConnector())
+using (var connector = new Neo4jConnector("neo4j+s://916f7f37.databases.neo4j.io", "neo4j", "_GjWi91K3QZkkGg3hA7Itrp-U9dlvzH80JnFsnvvW6I"))
 {
     var tuples = GetSelectedTuples();
     if (tuples.Count == 0)
@@ -286,6 +287,25 @@ using (var connector = new Neo4jConnector())
     {
         Console.WriteLine($"File {data.Item1}, PivotX {data.Item2}, PivotY {data.Item3}");
     }
+
+    var filePaths = documentData.Select(d => d.Item1).ToList();
+ 
+    // Use the predefined library path
+    string libraryPath = @"C:\Users\13679\source\repos\2025 AECtech Hack\Neo4j-20251115T173152Z-1-001\Neo4j\ShapeDiver Demomodels\DemoModels";
+
+    // Show file selector dialog and get user selection, replacing prefix if needed
+    var selectedFiles = FileSelector.SelectFiles(filePaths, replaceDemoModelPrefix: true, libraryPath: libraryPath);
+
+    if (selectedFiles.Count > 0)
+    {
+        Console.WriteLine("User selected:");
+        foreach (var f in selectedFiles)
+            Console.WriteLine(f);
+        // You can now use selectedFiles as needed
+    }
+    else
+    {
+        Console.WriteLine("No file selected.");
+    }
 }
 
-    
