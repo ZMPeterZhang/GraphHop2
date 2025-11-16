@@ -10,6 +10,8 @@ using Grasshopper.Kernel;
 using GraphHop2.Utilities; // Make sure this is present for FileSelector
 using System.IO;
 
+using Grasshopper;
+
 public class Neo4jConnector : IDisposable {
 
     public Neo4jConnector(
@@ -271,6 +273,7 @@ List<(IGH_DocumentObject, IGH_DocumentObject)> GetSelectedTuples()
 
     return connections;
 }
+
 public static class FuzzyPathQueryGenerator 
 {
     // Use string types, and static method!
@@ -297,14 +300,14 @@ public class Search
     /// </summary>
     /// <param name="term">The search term to be matched</param>
     /// <returns>An integer representing the score of the match</returns>
-    public int search(IEnumerable<IGH_DocumentObject> selectedObjects)
+    public async Task<List<(string, double, double, int)>> search(IEnumerable<IGH_DocumentObject> selectedObjects)
     {
-        int totalScore = 0;
-        totalScore += exactMatchQuery(selectedObjects);
-        totalScore += pathMatchQuery(selectedObjects);
-
+        var results = new List<(string, double, double, int)>();
+        // totalScore += await exactMatchQuery(selectedObjects);
+        results.AddRange(await pathMatchQuery(selectedObjects));
+        
         // Add more query scores as needed
-        return totalScore;
+        return results;
     }
 
     /// <summary>   
@@ -312,20 +315,23 @@ public class Search
     /// </summary>
     /// <param name="term">The search term to be matched</param>
     /// <returns>An integer representing the score of the match</returns>
-    public int exactMatchQuery(IEnumerable<IGH_DocumentObject> selectedObjects)
+    public async Task<int> exactMatchQuery(IEnumerable<IGH_DocumentObject> selectedObjects)
     {        
-        List<(IGH_DocumentObject, IGH_DocumentObject)> graph = SelectionToGraphUtility.GetConnections(selectedObjects);
-        
+        List<(IGH_DocumentObject, IGH_DocumentObject)> tuples = SelectionToGraphUtility.GetConnections(selectedObjects);
+
         int score = 0;
 
         try
         {
-            using (var connector = new Neo4jConnector())
+            using (var connector = new Neo4jConnector(
+                "neo4j://127.0.0.1:7687",
+                "neo4j",
+                "aechackathon"
+            ))
             {
-                var generator = new ExactMatchQueryGenerator(connector);
-                // QueryFromTuples is async; block-wait for result here (unless this is run in async context)
-                var result = generator.QueryFromTuples(graph).GetAwaiter().GetResult();
-                // You may use the record count or other logic for scoring
+                var generator = new QueryGenerator(connector);
+                // QueryFromTuples is async; await result here
+                var result = await generator.QueryFromTuples(tuples);
                 if (result != null && result.Count > 0)
                     score = 100;
 
@@ -336,47 +342,63 @@ public class Search
         {
             Console.WriteLine("Error in exactMatchQuery: " + ex.Message);
         }
-
         return score;
     }
 
 
-    public int pathMatchQuery(IEnumerable<IGH_DocumentObject> selectedObjects)
+    public async Task<List<(string, double, double, int)>> pathMatchQuery(IEnumerable<IGH_DocumentObject> selectedObjects)
+{
+    var allResults = new List<(string, double, double, int)>();
+    var paths = FindPathFromInputToOutput.GetShortestPathsFromInputsToOutputs(selectedObjects);
+
+    foreach (var path in paths)
     {
-        // Assuming path is a list of IGH_DocumentObject forming a path: [start, ..., end]
-        var paths = FindPathFromInputToOutput.GetShortestPathsFromInputsToOutputs(selectedObjects);
+        if (path == null || path.Count < 2)
+            continue; // skip this path
 
-        foreach (var path in paths)
+        var start = path.First();
+        var end = path.Last();
+        var pathLength = path.Count;
+
+        var startId = start.ComponentGuid.ToString();
+        var endId = end.ComponentGuid.ToString();
+
+        int minLength = Math.Max(1, pathLength - 1);
+        int maxLength = pathLength + 1;
+
+        string query = FuzzyPathQueryGenerator.QueryFromPath(startId, endId, minLength, maxLength);
+        Console.WriteLine(query);
+
+        using (var connector = new Neo4jConnector(
+            "neo4j://127.0.0.1:7687",
+            "neo4j",
+            "aechackathon"
+        ))
         {
-            if (path == null || path.Count < 2)
-            return 0;
-
-            var start = path.First();
-            var end = path.Last();
-            var pathLength = path.Count;
-
-            // Get ElementIds or unique Neo4j IDs for start and end if possible
-            var startId = start.ComponentGuid.ToString();
-            var endId = end.ComponentGuid.ToString();
-
-            int minLength = Math.Max(1, pathLength - 2);
-            int maxLength = pathLength + 4;
-
-            string query = FuzzyPathQueryGenerator.QueryFromPath(startId, endId, minLength, maxLength);
-            Console.WriteLine(query);
+            var records = await connector.RunQuery(query);
+            foreach (var record in records)
+            {
+                // These keys have to exist in the record!
+                var versionId = record.Keys.Contains("VersionId") ? record["VersionId"]?.ToString() : null;
+                var pivotX = record.Keys.Contains("PivotX") ? Convert.ToDouble(record["PivotX"]) : 0.0;
+                var pivotY = record.Keys.Contains("PivotY") ? Convert.ToDouble(record["PivotY"]) : 0.0;
+                allResults.Add((versionId, pivotX, pivotY, 50));
+            }
         }
-    return 10;
-        
     }
+    return allResults;
+}
 }
 
 
-using (var connector = new Neo4jConnector("neo4j+s://916f7f37.databases.neo4j.io", "neo4j", "_GjWi91K3QZkkGg3hA7Itrp-U9dlvzH80JnFsnvvW6I"))
+using (var connector = new Neo4jConnector(
+    "neo4j://127.0.0.1:7687",
+    "neo4j",
+    "aechackathon"
+))
 {
-
     Console.WriteLine("START");
     
-    var searcher = new Search();
     var tuples = GetSelectedTuples();
     if (tuples.Count == 0)
         return;
@@ -410,6 +432,18 @@ using (var connector = new Neo4jConnector("neo4j+s://916f7f37.databases.neo4j.io
         Console.WriteLine("No file selected.");
     }
     Console.WriteLine("END");
+    var ghDoc = Grasshopper.Instances.ActiveCanvas.Document;
+    var selectedObjects = ghDoc.SelectedObjects();
 
+var searcher = new Search();
+var final_results = await searcher.search(selectedObjects);
+
+foreach (var result in final_results)
+    {
+        Console.WriteLine($"VersionId: {result.Item1}, PivotX: {result.Item2}, PivotY: {result.Item3}, Score: {result.Item4}");
+    }
+
+
+    Console.WriteLine("END");
 }
 
