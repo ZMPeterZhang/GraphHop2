@@ -40,8 +40,8 @@ GraphHop2 connects Grasshopper (Rhino's visual programming environment) with a N
 Set the following environment variables for Neo4j connection:
 
 ```bash
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
+NEO4J_URI=neo4j://[your_connection_uri]
+NEO4J_USER=your_username
 NEO4J_PASSWORD=your_password
 ```
 
